@@ -30,7 +30,7 @@ LmModelResponse <- R6::R6Class(
         beta_variables = self$beta_variables,
         diag_model = as.list(self$diag_model),
         diag_coefs = self$diag_coefs,
-        diag_data = self$diag_data %>% head()
+        diag_data = self$diag_data
       )
       jsonlite::toJSON(ret, ..., dataframe = "columns", pretty = pretty, auto_unbox = TRUE)
     }
