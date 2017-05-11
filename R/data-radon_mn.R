@@ -1,0 +1,11 @@
+#' Historical data used for classification examples.
+#'
+#' The dataset considered here, available in the raw_data/radon.csv file, contains data for 919 homes in the 85 counties of Minnesota. Radon comes from underground and can enter more easily when home is built into ground. So, one potentially useful predictor of the radon level in a home is an indicator for whether the measurement was taken in a basement. We also have an important county-level predictor, a measurement of the average soil uranium content in the county.
+#'
+#'
+#' @docType data
+#' @keywords datasets
+#' @name radon_mn
+#' @usage data(radon_mn)
+#' @format A data frame with 919 rows and 28 variables
+NULL
