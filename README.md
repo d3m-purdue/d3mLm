@@ -111,27 +111,26 @@ result$as_json()
 ### `diag_model`
 
 * `r.squared`
-    * R^2, the ‘fraction of variance explained by the model’, `R^2 = 1 - Sum(R[i]^2) / Sum((y[i]- y*)^2)`,
+    * `R^2`, the ‘fraction of variance explained by the model’, `R^2 = 1 - sum(R[i]^2) / sum((y[i]- y*)^2)`,
       where `y*` is the mean of `y[i]` if there is an intercept and zero otherwise.
 * `adj.r.squared`
     * the above R^2 statistic 'adjusted', penalizing for higher p.
 * `sigma`
-    * the square root of the estimated residual variance. `sigma^2 = 1/(n-p) Sum(w[i] R[i]^2)`, where `R[i]` is the `i`-th residual, `residuals[i]`.
+    * the square root of the estimated residual variance. `sigma^2 = 1/(n-p) sum(w[i] R[i]^2)`, where `R[i]` is the i-th residual, `residuals[i]`.
 * `statistic`
     * F-statistic of the model
 * `p.value`
-    * p-value from the F test, describing whether the full regression is significant. (`<= 0.05` is good)
+    * p-value from the F test, describing whether the full regression is significant. (If `<= 0.05`, at least one of the coefficients is significant)
 * `df`
     * degrees of freedom used by the coefficients
 * `logLik`
-    * the data's log-likelihood under the model.  (formula)[https://www.statlect.com/fundamentals-of-statistics/linear-regression-maximum-likelihood]
+    * the data's log-likelihood under the model.  [formula](https://www.statlect.com/fundamentals-of-statistics/linear-regression-maximum-likelihood)
 * `AIC`
     * Akaike's ‘An Information Criterion’. `-2 * logLik + k * npar`, where `npar` represents the number of parameters in the fitted model, and `k = 2`.  The lower the better
 * `BIC`
     * Schwarz's Bayesian criterion. AIC formula but with `k = log(n)` (`n` being the number of observations).  The lower the better
 * `deviance`
-    * quality-of-fit statistic for a model that is often used for statistical hypothesis testing. It is a generalization of the idea of using the sum of squares of residuals in ordinary least squares to cases where model-fitting is achieved by maximum likelihood.
-    * https://wikimedia.org/api/rest_v1/media/math/render/svg/5ef99a34ce79588146ecb45708d46bc9141a97d1
+    * quality-of-fit statistic for a model that is often used for statistical hypothesis testing. It is a generalization of the idea of using the sum of squares of residuals in ordinary least squares to cases where model-fitting is achieved by maximum likelihood. [source](https://wikimedia.org/api/rest_v1/media/math/render/svg/5ef99a34ce79588146ecb45708d46bc9141a97d1)
 * `df.residual`
     * residual degrees of freedom
 
@@ -146,9 +145,9 @@ result$as_json()
 * `statistic`
     * the T-statistic value of the corresponding coefficient
 * `p.value`
-    * the p-value of the T-statistic test.  (`<= 0.05` is good)
+    * the p-value of the T-statistic test.  (If `<= 0.05`, there is belief that this parameter is significant in the presence of the other coefficients)
 
-### `"diag_data`
+### `diag_data`
 
 * `.rownames`
     * row name from the data set being used
@@ -159,14 +158,14 @@ result$as_json()
 * `.fitted`
     * predicted values of the model
 * `.se.fit`
-    * standard errors of fitted values
+    * standard errors of fitted values.  How strong of a fit it is.
 * `.resid`
     * the difference between the observed and `.fitted` values.
 * `.hat`
-    * Diagonal if the Hat Matrix. Or a measure of how far away the independent variable values of an observation are from those of the other observations.
+    * Diagonal if the Hat Matrix. Or a measure of how far away the independent variable values of an observation are from those of the other observations. A point is considered influential if the `.hat[i] > 2 * p / n`.
 * `.sigma`
     * Estimate of residual standard deviation when corresponding observation is dropped from model
 * `.cooksd`
-    * estimate of the influence of a data point when performing a least-squares regression analysis.  Influential if `cooksd[i] > 4/n`.
+    * estimate of the influence of a data point when performing a least-squares regression analysis.  A point is considered influential if `.cooksd[i] > 4/n`.
 * `.std.resid`
   * `std.resid[i] = residual[i] / standard.deviation(residual[i])`.  The `.std.resid` should follow a standard normal curve.
