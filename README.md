@@ -59,8 +59,7 @@ radon_model
 #    0.820478     0.029328     0.087523     0.008665
 #
 
-result <- extract_lm(radon_model)
-result$as_json()
+run_model(radon_mn, "Uppm", c("typebldg", "basement", "dupflag"))
 ```
 ```json
 {
@@ -108,7 +107,9 @@ result$as_json()
 
 ## Output Explaination
 
-### `diag_model`
+### Linear Model
+
+#### `diag_model`
 
 * `r.squared`
     * `R^2`, the ‘fraction of variance explained by the model’, `R^2 = 1 - sum(R[i]^2) / sum((y[i]- y*)^2)`,
@@ -134,7 +135,7 @@ result$as_json()
 * `df.residual`
     * residual degrees of freedom
 
-### `diag_coefs`
+#### `diag_coefs`
 
 * `term`
     * the term in the linear model being estimated and tested. Incluces `(Intercept)`, if present.
@@ -147,7 +148,7 @@ result$as_json()
 * `p.value`
     * the p-value of the T-statistic test.  (If `<= 0.05`, there is belief that this parameter is significant in the presence of the other coefficients)
 
-### `diag_data`
+#### `diag_data`
 
 * `.rownames`
     * row name from the data set being used
