@@ -4,7 +4,7 @@
 \alias{extract_model}
 \title{Extract linear model diagnostics}
 \usage{
-extract_model(x)
+extract_model(x, data = stats::model.frame(x))
 }
 \arguments{
 \item{x}{linear model object of class 'lm'}

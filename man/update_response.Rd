@@ -7,13 +7,13 @@
 \alias{update_response.loess}
 \title{Update model response object}
 \usage{
-update_response(x, res, ...)
+update_response(x, res, data, ...)
 
-\method{update_response}{default}(x, res, ...)
+\method{update_response}{default}(x, res, data, ...)
 
-\method{update_response}{lm}(x, res, ...)
+\method{update_response}{lm}(x, res, data, ...)
 
-\method{update_response}{loess}(x, res, ...)
+\method{update_response}{loess}(x, res, data, ...)
 }
 \arguments{
 \item{x}{model object}

@@ -105,11 +105,11 @@ ModelResponse <- R6::R6Class(
 #' radon_model <- lm(Uppm ~ typebldg + basement + dupflag, data = radon_mn)
 #' result <- extract_lm(radon_model)
 #' result$as_json()
-extract_model <- function(x) {
+extract_model <- function(x, data = stats::model.frame(x)) {
   response <- ModelResponse$new()
 
   # set diagnostic content
-  update_response(x, response)
+  update_response(x, response, data = data)
 
   response
 }
@@ -123,22 +123,22 @@ extract_model <- function(x) {
 #' @export
 #' @rdname update_response
 #' @import broom
-update_response <- function(x, res, ...) {
+update_response <- function(x, res, data, ...) {
   UseMethod("update_response")
 }
 #' @export
 #' @rdname update_response
-update_response.default <- function(x, res, ...) {
+update_response.default <- function(x, res, data, ...) {
   stop("method not implemented for object of class: ", class(x)[1])
 }
 
 #' @export
 #' @rdname update_response
-update_response.lm <- function(x, res, ...) {
+update_response.lm <- function(x, res, data, ...) {
   res$add_key_val("model_type", "linear model")
   res$add_key_val("model_call", as.character(as.expression(x$call)))
 
-  diag_data <- augment(x)
+  diag_data <- augment(x, data = data)
 
   # response variable
   diag_data_names <- names(diag_data)
@@ -160,7 +160,7 @@ update_response.lm <- function(x, res, ...) {
 
 #' @export
 #' @rdname update_response
-update_response.loess <- function(x, res, ...) {
+update_response.loess <- function(x, res, data, ...) {
   res$add_key_val("model_type", "loess model")
   res$add_key_val("model_call", as.character(as.expression(x$call)))
 
@@ -171,7 +171,7 @@ update_response.loess <- function(x, res, ...) {
   res$add_key_val("predictor_variables", as.list(response_variable))
 
   # augment
-  diag_data <- augment(x)
+  diag_data <- augment(x, data = data)
   diag_data$.weights <- x$weights
   diag_data$.robust <- x$robust
 
@@ -204,7 +204,7 @@ run_model <- function(data, response, predictor_variables, model_fn) {
   }
   form <- as.formula(paste(response, "~", paste(predictor_variables, collapse = "+")))
   mod <- model_fn(form, data = data)
-  res <- extract_model(mod)
+  res <- extract_model(mod, data = data)
   res$as_json()
 }
 
