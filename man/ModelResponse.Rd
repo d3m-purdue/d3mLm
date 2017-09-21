@@ -10,7 +10,7 @@ R6 object containing all necessary information of a linear model object
 
 \preformatted{
 radon_model <- lm(Uppm ~ typebldg + basement + dupflag, data = radon_mn)
-result <- extract_lm(radon_model)
+result <- extract_model(radon_model)
 result$as_json()
 }
 }

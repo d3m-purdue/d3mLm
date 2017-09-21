@@ -7,11 +7,11 @@
 \alias{update_response.loess}
 \title{Update model response object}
 \usage{
-update_response(x, res, data, ...)
+update_response(x, res, data, ..., model_name = class(x)[1])
 
 \method{update_response}{default}(x, res, data, ...)
 
-\method{update_response}{lm}(x, res, data, ...)
+\method{update_response}{lm}(x, res, data, ..., model_name = "linear model")
 
 \method{update_response}{loess}(x, res, data, ...)
 }
@@ -20,7 +20,11 @@ update_response(x, res, data, ...)
 
 \item{res}{response object of class \code{ModelResponse}}
 
+\item{data}{data used for \code{broom::augment}}
+
 \item{...}{ignored}
+
+\item{model_name}{name of model used in calculation}
 }
 \description{
 Update model response object

@@ -7,7 +7,7 @@
 \alias{run_loess}
 \title{Run a model and extract features}
 \usage{
-run_model(data, response, predictor_variables, model_fn)
+run_model(data, response, predictor_variables, model_fn, model_name, ...)
 
 run_lm(data, response, predictor_variables)
 
@@ -23,6 +23,10 @@ run_loess(data, response, predictor_variables)
 \item{predictor_variables}{name of all predictor variables to be used. (character vector)}
 
 \item{model_fn}{function to create the model object}
+
+\item{model_name}{string of function name to create the model object}
+
+\item{...}{items passed to extract_model}
 
 \item{quadratic_variables}{name of quadratic variables. (character vector)}
 }
