@@ -6,7 +6,7 @@
 #' @section Usage:
 #' \preformatted{
 #' radon_model <- lm(Uppm ~ typebldg + basement + dupflag, data = radon_mn)
-#' result <- extract_lm(radon_model)
+#' result <- extract_model(radon_model)
 #' result$as_json()
 #' }
 #' @section Initialize:
@@ -57,6 +57,28 @@
 NULL
 
 
+models_by_id <- (R6::R6Class(
+  "Model Ids",
+  public = list(
+    models = list(),
+    add_model = function(x, fn_name) {
+      id <- digest::digest(x)
+      self$models[[id]] <- x
+      id
+    },
+    get_model = function(id) {
+      self$models[[id]]
+    },
+    reset = function() {
+      self$models <- list()
+    },
+    ids = function(id) {
+      names(self$models)
+    }
+  )
+))$new()
+
+
 ModelResponse <- R6::R6Class(
   "ModelResponse",
   public = list(
@@ -99,17 +121,19 @@ ModelResponse <- R6::R6Class(
 #' Extract all information possible with broom::tidy, broom::glance, and broom::augment.
 #'
 #' @param x linear model object of class 'lm'
+#' @param ... items passed to update_response
+#' @param data data to be modeled
 #' @return object of class 'ModelResponse'
 #' @export
 #' @examples
 #' radon_model <- lm(Uppm ~ typebldg + basement + dupflag, data = radon_mn)
-#' result <- extract_lm(radon_model)
+#' result <- extract_model(radon_model)
 #' result$as_json()
-extract_model <- function(x, data = stats::model.frame(x)) {
+extract_model <- function(x, ..., data = stats::model.frame(x)) {
   response <- ModelResponse$new()
 
   # set diagnostic content
-  update_response(x, response, data = data)
+  update_response(x, response, data = data, ...)
 
   response
 }
@@ -119,11 +143,13 @@ extract_model <- function(x, data = stats::model.frame(x)) {
 #'
 #' @param x model object
 #' @param res response object of class \code{ModelResponse}
+#' @param data data used for \code{broom::augment}
 #' @param ... ignored
+#' @param model_name name of model used in calculation
 #' @export
 #' @rdname update_response
 #' @import broom
-update_response <- function(x, res, data, ...) {
+update_response <- function(x, res, data, ..., model_name = class(x)[1]) {
   UseMethod("update_response")
 }
 #' @export
@@ -134,16 +160,15 @@ update_response.default <- function(x, res, data, ...) {
 
 #' @export
 #' @rdname update_response
-update_response.lm <- function(x, res, data, ...) {
-  res$add_key_val("model_type", "linear model")
-  res$add_key_val("model_call", as.character(as.expression(x$call)))
+update_response.lm <- function(x, res, data, ..., model_name = "linear model") {
+  res$add_key_val("model_type", model_name)
 
-  diag_data <- augment(x, data = data)
+  res$add_key_val("model_call", as_model_call(x, "lm"))
 
   # response variable
-  diag_data_names <- names(diag_data)
-  is_response <- min(which(!grepl("^\\.", diag_data_names, perl = TRUE)))
-  res$add_key_val("response_variable", diag_data_names[is_response])
+  augment_names <- names(augment(x))
+  is_response <- min(which(!grepl("^\\.", augment_names, perl = TRUE)))
+  res$add_key_val("response_variable", augment_names[is_response])
 
   # betas
   tidy_dt <- tidy(x)
@@ -152,9 +177,26 @@ update_response.lm <- function(x, res, data, ...) {
   # broom
   res$add_key_val("diag_model", as.list(glance(x)))
   res$add_key_val("diag_coefs", tidy_dt)
-  res$add_key_val("diag_data", diag_data)
+  res$add_key_val("diag_data", augment(x, data = data))
 
   res
+}
+
+as_model_call <- function(x, fn_name) {
+  model_call <- as.character(as.expression(x$call))
+  model_call <- gsub(
+    "formula = form",
+    deparse(terms(x)),
+    model_call,
+    fixed = TRUE
+  )
+  model_call <- gsub(
+    "model_fn(",
+    paste0(fn_name, "("),
+    model_call,
+    fixed = TRUE
+  )
+  model_call
 }
 
 
@@ -162,7 +204,7 @@ update_response.lm <- function(x, res, data, ...) {
 #' @rdname update_response
 update_response.loess <- function(x, res, data, ...) {
   res$add_key_val("model_type", "loess model")
-  res$add_key_val("model_call", as.character(as.expression(x$call)))
+  res$add_key_val("model_call", as_model_call(x, "loess"))
 
   # response variable
   predictors <- x$xnames
@@ -194,18 +236,45 @@ update_response.loess <- function(x, res, data, ...) {
 #' @param response single response variable to be used. (character)
 #' @param predictor_variables name of all predictor variables to be used. (character vector)
 #' @param model_fn function to create the model object
+#' @param model_name string of function name to create the model object
 #' @param quadratic_variables name of quadratic variables. (character vector)
+#' @param ... items passed to extract_model
+#' @importFrom stats as.formula lm loess terms
 #' @export
 #' @rdname run_model
-run_model <- function(data, response, predictor_variables, model_fn) {
+run_model <- function(data, response, predictor_variables, model_fn, model_name, ...) {
   if (!is.character(response)) stop("must supply a character type for response")
   if (!is.character(predictor_variables)) {
     stop("must supply a character type vector for predictor_variables")
   }
   form <- as.formula(paste(response, "~", paste(predictor_variables, collapse = "+")))
   mod <- model_fn(form, data = data)
-  res <- extract_model(mod, data = data)
+  res <- extract_model(mod, data = data, ...)
+  id <- models_by_id$add_model(mod, model_name)
+  res$add_key_val("id", id)
   res$as_json()
+}
+
+
+#' Predict a model
+#'
+#' @param id model id that should exist in \code{models_by_id$ids()}
+#' @param data data used in prediction
+#' @param predictor_variables name of all predictor variables to be used. (character vector)... idk how this would really work
+#' @return json output of fitted values
+#' @export
+predict_model <- function(id, data, predictor_variables) {
+  if (!is.character(id)) stop("must supply a character type for id")
+  if (!is.character(predictor_variables)) {
+    stop("must supply a character type vector for predictor_variables")
+  }
+
+  mod <- models_by_id$get_model(id)
+  fitted <- broom::augment(mod, newdata = data[predictor_variables])
+
+  response <- ModelResponse$new()
+  response$add_key_val("fitted", fitted$.fitted)
+  response$as_json()
 }
 
 
@@ -214,7 +283,7 @@ run_model <- function(data, response, predictor_variables, model_fn) {
 #' @examples
 #' run_lm(iris, "Sepal.Length", c("Sepal.Width", "Petal.Width"))
 run_lm <- function(data, response, predictor_variables) {
-  run_model(data, response, predictor_variables, model_fn = lm)
+  run_model(data, response, predictor_variables, model_fn = lm, model_name = "lm")
 }
 
 #' @export
@@ -233,7 +302,10 @@ run_quadratic <- function(data, response, predictor_variables, quadratic_variabl
     }
     data[[to_name]] <- vals * vals
   }
-  run_model(data, response, c(predictor_variables, to_name_fn(quadratic_variables)), model_fn = lm)
+  run_model(
+    data, response, c(predictor_variables, to_name_fn(quadratic_variables)),
+    model_fn = lm, model_name = "quadratic model"
+  )
 }
 
 
@@ -242,5 +314,8 @@ run_quadratic <- function(data, response, predictor_variables, quadratic_variabl
 #' @examples
 #' run_loess(iris, "Sepal.Length", c("Sepal.Width", "Petal.Width"))
 run_loess <- function(data, response, predictor_variables) {
-  run_model(data, response, predictor_variables, model_fn = loess)
+  run_model(
+    data, response, predictor_variables,
+    model_fn = loess, model_name = "loess"
+  )
 }
